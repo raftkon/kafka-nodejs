@@ -1,0 +1,32 @@
+services:
+  zookeeper:
+    image: bitnami/zookeeper:latest
+    container_name: zookeeper
+    ports:
+      - 2181:2181
+    environment:
+      - ALLOW_ANONYMOUS_LOGIN=yes
+    networks:
+      - kafka-nodejs-test
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: kafka
+    ports:
+      - 9093:9093
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_LISTENERS=PLAINTEXT://:9093
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://LOCALHOST:9093
+      - ALLOW_PLAINTEXT_LISTENER=YES
+    depends_on:
+      - zookeeper
+    networks:
+      - kafka-nodejs-test
+
+networks:
+  kafka-nodejs-test:
+    driver: bridge
+  mynetwork:
+    driver: bridge
