@@ -1,4 +1,4 @@
-import { Kafka, CompressionTypes } from "kafkajs";
+import { Kafka, CompressionTypes, logLevel } from "kafkajs";
 import { config } from "dotenv";
 import { randomNumber } from "../lib/helperFunctions.js";
 import { readFileSync } from "fs";
@@ -6,6 +6,7 @@ import { readFileSync } from "fs";
 config();
 
 const kafka = new Kafka({
+  logLevel: logLevel.INFO,
   clientId: process.env.KAFKA_CLIENT_ID_PRODUCER,
   brokers: [process.env.KAFKA_BROKER],
   ssl: {
