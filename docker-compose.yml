@@ -1,25 +1,32 @@
 services:
   zookeeper:
-    image: bitnami/zookeeper:latest
+    image: zookeeper:3.9
     container_name: zookeeper
-    ports:
-      - 2181:2181
-    environment:
-      - ALLOW_ANONYMOUS_LOGIN=yes
+    restart: always
+    volumes:
+      - zookeeper_data:/data
+      - zookeeper_logs:/logs
+    expose:
+      - 2181
     networks:
       - kafka-nodejs-test
 
   kafka:
-    image: bitnami/kafka:latest
+    image: wurstmeister/kafka:2.13-2.8.1
     container_name: kafka
+    volumes:
+      - kafka_data:/kafka
     ports:
       - 9093:9093
     environment:
-      - KAFKA_BROKER_ID=1
-      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
-      - KAFKA_LISTENERS=PLAINTEXT://:9093
-      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://LOCALHOST:9093
-      - ALLOW_PLAINTEXT_LISTENER=YES
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+      KAFKA_DELETE_TOPIC_ENABLE: "true"
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9093
+      ALLOW_PLAINTEXT_LISTENER: YES
     depends_on:
       - zookeeper
     networks:
@@ -28,5 +35,7 @@ services:
 networks:
   kafka-nodejs-test:
     driver: bridge
-  mynetwork:
-    driver: bridge
+volumes:
+  kafka_data:
+  zookeeper_logs:
+  zookeeper_data:

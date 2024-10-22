@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "produce": "node src/producer.js",
-    "consume": "node src/consumer.js"
+    "consume": "node src/consumer.js",
+    "admin": "node src/admin.js"
   },
   "keywords": [],
   "author": "",
