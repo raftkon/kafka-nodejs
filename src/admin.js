@@ -3,6 +3,7 @@ import { config } from "dotenv";
 import { randomBytes } from "crypto";
 import * as readline from "node:readline/promises";
 import { stdin, stdout } from "node:process";
+import { readFileSync } from "fs";
 
 config();
 
@@ -12,7 +13,7 @@ class Admin {
     this.admin = client.admin();
   }
 
-  async createTopics(topic, numPartitions) {
+  async createTopics(topic, numPartitions = 1) {
     await this.admin.connect();
     await this.admin.createTopics({
       topics: [
@@ -48,59 +49,36 @@ class Admin {
 
     return filteredTopic;
   }
+
+  async deleteTopic(topic) {
+    await this.admin.connect();
+    await this.admin.deleteTopics({
+      topics: [topic],
+    });
+    await this.admin.disconnect();
+
+    return;
+  }
 }
 
 async function run() {
   try {
     const kafka = new Kafka({
       clientId: randomBytes(4).toString("hex"),
-      // clientId: process.env.KAFKA_CLIENT_ID_CONSUMER,
       brokers: [process.env.KAFKA_BROKER],
+      ssl: {
+        rejectUnauthorized: true,
+        cert: readFileSync(
+          new URL("../kafka-keys/trustore.pem", import.meta.url)
+        ),
+        key: readFileSync(
+          new URL("../kafka-keys/keystore.pem", import.meta.url)
+        ),
+      },
     });
 
     const admin = new Admin(kafka);
-
-    const rl = readline.createInterface({
-      input: stdin,
-      output: stdout,
-    });
-
-    console.log(
-      "\nPress 1 to create topic.\nPress 2 to list topics.\nPress 3 or 'exit' to terminate process\nEnter topic name to fetch metadata."
-    );
-
-    rl.on("line", async (input) => {
-      input = input.trim(); // Remove any leading/trailing whitespace
-      switch (input) {
-        case "1":
-          let topic = await rl.question("Name of topic: ");
-          let numPartitions = await rl.question("Number of partitions: ");
-          await admin.createTopics(topic, numPartitions);
-          break;
-        case "2":
-          await admin.listTopics();
-          break;
-        case "3":
-        case "exit":
-          rl.close();
-          return;
-        default:
-          await admin.fetchTopicMetadata(input);
-          break;
-      }
-      console.log(
-        "\nPress 1 to create topic.\nPress 2 to list topics.\nPress 3 or 'exit' to terminate process\nEnter topic name to fetch metadata."
-      );
-    });
-
-    rl.on("close", () => {
-      console.log("The process 'closed' gracefully.");
-      process.exit(0);
-    });
-    rl.on("SIGINT", () => {
-      console.log("Exiting...");
-      process.exit(0);
-    });
+    await admin.listTopics();
   } catch (error) {
     console.log({ error });
   }

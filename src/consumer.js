@@ -7,17 +7,40 @@ config();
 
 const kafka = new Kafka({
   logLevel: logLevel.INFO,
-  clientId: process.env.KAFKA_CLIENT_ID_CONSUMER,
-  // clientId: randomBytes(4).toString("hex"),
+  // clientId: process.env.KAFKA_CLIENT_ID_CONSUMER,
+  clientId: randomBytes(4).toString("hex"),
   brokers: [process.env.KAFKA_BROKER],
   ssl: {
+    ca: readFileSync(
+      new URL(
+        "../secrets/kafka-keys/symbiotik_2025-06-11/rootCA.pem",
+        import.meta.url
+      )
+    ),
     rejectUnauthorized: true,
+    // cert: readFileSync(new URL("../kafka-keys/trustore.pem", import.meta.url)),
+    // key: readFileSync(new URL("../kafka-keys/keystore.pem", import.meta.url)),
     cert: readFileSync(
-      new URL("../certs/symbiotik/kafka-truststore.pem", import.meta.url)
+      new URL(
+        "../secrets/kafka-keys/symbiotik_2025-06-11/trustore.pem",
+        import.meta.url
+      )
     ),
     key: readFileSync(
-      new URL("../certs/symbiotik/kafka-keystore.pem", import.meta.url)
+      new URL(
+        "../secrets/kafka-keys/symbiotik_2025-06-11/keystore.pem",
+        import.meta.url
+      )
     ),
+  },
+  connectionTimeout: 30000,
+  requestTimeout: 30000,
+  retry: {
+    initialRetryTime: 300, // backoff starts at 300ms
+    retries: 10, // up to 10 retries
+    maxRetryTime: 60000, // stop after 60s of trying
+    factor: 0.2,
+    multiplier: 2,
   },
 });
 
@@ -30,7 +53,13 @@ async function run() {
   await consumer.connect();
 
   await consumer.subscribe({
-    topics: [process.env.KAFKA_TOPIC],
+    topics: [
+      "mouse-tracking",
+      "question-read",
+      "answer-created",
+      "action_rl",
+      "my-topic",
+    ],
     fromBeginning: true,
   });
 
@@ -43,6 +72,7 @@ async function run() {
         partition,
         offset: message.offset,
         partition,
+        topic,
       });
     },
   });
